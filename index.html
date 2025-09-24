@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>고속도로 정보 시스템</title>
+
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <style>
+        html, body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+        #map {
+            width: 100%;
+            height: 100%;
+        }
+        /* 고속도로 선택 메뉴 스타일 */
+        .highway-selector {
+            position: absolute; /* 지도 위에 겹치도록 설정 */
+            top: 10px;
+            right: 10px;
+            background-color: white;
+            padding: 10px;
+            border-radius: 5px;
+            z-index: 1000; /* 다른 요소들보다 위에 보이도록 설정 */
+            border: 1px solid #ccc;
+        }
+    </style>
+</head>
+<body>
+<div class="highway-selector">
+        <h3>고속도로 선택</h3>
+        <input type="checkbox" id="gyeongbu" name="highway" value="gyeongbu">
+        <label for="gyeongbu">경부선</label><br>
+        <input type="checkbox" id="yeongdong" name="highway" value="yeongdong">
+        <label for="yeongdong">영동선</label><br>
+    </div>
+
+    <div id="map"></div>
+<script>
+        // 1. 'map'이라는 id를 가진 div에 지도를 생성합니다.
+        var map = L.map('map').setView([37.5665, 126.9780], 7);
+
+        // 2. 지도에 표시될 배경 타일 레이어를 추가합니다.
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+
+// 3. (업그레이드) 가상의 고속도로 경로 데이터
+        // 경부선 데이터를 훨씬 상세하게 수정했습니다.
+        const highwayData = {
+            gyeongbu: [ // 경부선 (서울 -> 부산) - 상세 경로
+                [37.5665, 126.9780], // 서울
+                [37.5172, 127.0473], // 한남
+                [37.4764, 127.0494], // 양재
+                [37.3328, 127.0982], // 판교
+                [37.2800, 127.0100], // 수원
+                [37.2200, 127.0000], // 동탄
+                [37.0083, 127.0678], // 안성
+                [36.8143, 127.1468], // 천안
+                [36.6343, 127.4941], // 청주
+                [36.3214, 127.4201], // 대전
+                [36.1365, 127.5830], // 옥천
+                [35.9431, 127.9113], // 김천
+                [35.8814, 128.4014], // 구미
+                [35.8714, 128.6014], // 대구
+                [35.5689, 128.9958], // 영천
+                [35.5390, 129.0900], // 경주
+                [35.4328, 129.2478], // 언양
+                [35.2384, 129.0769], // 양산
+                [35.1796, 129.0756]  // 부산
+            ],
+            yeongdong: [ // 영동선 (인천 -> 강릉) - 기존 데이터 유지
+                [37.4563, 126.7052], // 인천
+                [37.3800, 127.9833], // 원주
+                [37.7519, 128.8761]  // 강릉
+            ]
+        };
+
+        // 4. (추가) 지도에 그려진 라인을 저장할 객체
+        const highwayLayers = {};
+
+        // 5. (추가) 모든 체크박스에 이벤트 리스너를 추가하는 함수
+        document.querySelectorAll('input[name="highway"]').forEach(checkbox => {
+            checkbox.addEventListener('change', function() {
+                const highwayName = this.value; // 'gyeongbu' 또는 'yeongdong'
+
+                // 체크박스가 체크되었을 때
+                if (this.checked) {
+                    // 아직 라인이 그려지지 않았다면 라인을 그림
+                    if (!highwayLayers[highwayName]) {
+                        const path = highwayData[highwayName];
+                        const color = highwayName === 'gyeongbu' ? 'blue' : 'green';
+                        const polyline = L.polyline(path, { color: color }).addTo(map);
+                        
+                        // 팝업 추가
+                        polyline.bindPopup(`<b>${highwayName === 'gyeongbu' ? '경부선' : '영동선'}</b>`);
+                        
+                        // 그린 라인을 객체에 저장
+                        highwayLayers[highwayName] = polyline;
+                    }
+                } 
+                // 체크박스가 해제되었을 때
+                else {
+                    // 그려진 라인이 있다면 지도에서 제거
+                    if (highwayLayers[highwayName]) {
+                        map.removeLayer(highwayLayers[highwayName]);
+                        delete highwayLayers[highwayName]; // 객체에서 삭제
+                    }
+                }
+            });
+        });
+
+    </script>
+</body>
+</html>
