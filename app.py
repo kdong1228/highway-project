@@ -1,4 +1,3 @@
-from flask import Flask
 from flask import Flask, render_template     # render_template 이라는 부품을 추가로 가져옵니다.
 
 app = Flask(__name__)
