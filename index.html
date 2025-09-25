@@ -32,88 +32,120 @@
     </style>
 </head>
 <body>
-<div class="highway-selector">
+    <div class="highway-selector">
         <h3>고속도로 선택</h3>
+        <input type="checkbox" id="toggle-all" name="highway-toggle">
+        <label for="toggle-all"><b>전체 선택</b></label>
+        <hr>
         <input type="checkbox" id="gyeongbu" name="highway" value="gyeongbu">
         <label for="gyeongbu">경부선</label><br>
         <input type="checkbox" id="yeongdong" name="highway" value="yeongdong">
         <label for="yeongdong">영동선</label><br>
+        <input type="checkbox" id="seohaean" name="highway" value="seohaean">
+        <label for="seohaean">서해안선</label><br>
+        <input type="checkbox" id="jungbu" name="highway" value="jungbu">
+        <label for="jungbu">중부선</label><br>
+        <input type="checkbox" id="honam" name="highway" value="honam">
+        <label for="honam">호남선</label><br>
     </div>
 
     <div id="map"></div>
 <script>
-        // 1. 'map'이라는 id를 가진 div에 지도를 생성합니다.
-        var map = L.map('map').setView([37.5665, 126.9780], 7);
+    // 1. 'map'이라는 id를 가진 div에 지도를 생성합니다.
+    var map = L.map('map').setView([36.8, 127.5], 7); // 지도의 중심점을 한반도 중심으로 조정
 
-        // 2. 지도에 표시될 배경 타일 레이어를 추가합니다.
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-        }).addTo(map);
+    // 2. 지도에 표시될 배경 타일 레이어를 추가합니다.
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    }).addTo(map);
 
-// 3. (업그레이드) 가상의 고속도로 경로 데이터
-        // 경부선 데이터를 훨씬 상세하게 수정했습니다.
+    // 3. (대폭 확장) 전국의 주요 고속도로 가상 경로 데이터
+    // 각 고속도로의 이름, 색상, 경로 데이터를 객체 형태로 정리하여 관리하기 쉽게 변경
+    // (대폭 상세화) 모든 고속도로의 경로 데이터를 세밀하게 추가
         const highwayData = {
-            gyeongbu: [ // 경부선 (서울 -> 부산) - 상세 경로
-                [37.5665, 126.9780], // 서울
-                [37.5172, 127.0473], // 한남
-                [37.4764, 127.0494], // 양재
-                [37.3328, 127.0982], // 판교
-                [37.2800, 127.0100], // 수원
-                [37.2200, 127.0000], // 동탄
-                [37.0083, 127.0678], // 안성
-                [36.8143, 127.1468], // 천안
-                [36.6343, 127.4941], // 청주
-                [36.3214, 127.4201], // 대전
-                [36.1365, 127.5830], // 옥천
-                [35.9431, 127.9113], // 김천
-                [35.8814, 128.4014], // 구미
-                [35.8714, 128.6014], // 대구
-                [35.5689, 128.9958], // 영천
-                [35.5390, 129.0900], // 경주
-                [35.4328, 129.2478], // 언양
-                [35.2384, 129.0769], // 양산
-                [35.1796, 129.0756]  // 부산
-            ],
-            yeongdong: [ // 영동선 (인천 -> 강릉) - 기존 데이터 유지
-                [37.4563, 126.7052], // 인천
-                [37.3800, 127.9833], // 원주
-                [37.7519, 128.8761]  // 강릉
-            ]
+            gyeongbu: {
+                name: '경부선', color: 'blue',
+                path: [[37.5665, 126.9780],[37.5172, 127.0473],[37.4764, 127.0494],[37.3328, 127.0982],[37.2800, 127.0100],[37.2200, 127.0000],[37.0083, 127.0678],[36.8143, 127.1468],[36.6343, 127.4941],[36.3214, 127.4201],[36.1365, 127.5830],[35.9431, 127.9113],[35.8814, 128.4014],[35.8714, 128.6014],[35.5689, 128.9958],[35.5390, 129.0900],[35.4328, 129.2478],[35.2384, 129.0769],[35.1796, 129.0756]]
+            },
+            yeongdong: {
+                name: '영동선', color: 'green',
+                path: [[37.4563, 126.7052],[37.4000, 126.8500],[37.3300, 127.0500],[37.2958, 127.3200],[37.3333, 127.6000],[37.3800, 127.9833],[37.5000, 128.3000],[37.6000, 128.6000],[37.7519, 128.8761]]
+            },
+            seohaean: {
+                name: '서해안선', color: '#E69900',
+                path: [[37.5700, 126.8800],[37.3900, 126.8000],[37.2750, 126.7052],[36.9500, 126.7500],[36.8143, 126.7000],[36.5000, 126.5500],[36.2500, 126.6500],[35.9078, 126.6900],[35.4800, 126.5300],[34.8118, 126.3900]]
+            },
+            jungbu: {
+                name: '중부선', color: 'red',
+                path: [[37.7300, 127.0490],[37.6000, 127.1500],[37.5200, 127.2200],[37.3500, 127.2800],[37.1500, 127.3500],[37.0083, 127.4000],[36.8000, 127.4500],[36.6343, 127.4941]]
+            },
+            honam: {
+                name: '호남선', color: 'purple',
+                path: [[36.3214, 127.4201],[36.2000, 127.2000],[36.0000, 127.0500],[35.8200, 127.1480],[35.6000, 126.9500],[35.3000, 126.8800],[35.1600, 126.8510]]
+            }
         };
 
-        // 4. (추가) 지도에 그려진 라인을 저장할 객체
-        const highwayLayers = {};
+    // 4. 지도에 그려진 라인을 저장할 객체
+    const highwayLayers = {};
 
-        // 5. (추가) 모든 체크박스에 이벤트 리스너를 추가하는 함수
-        document.querySelectorAll('input[name="highway"]').forEach(checkbox => {
-            checkbox.addEventListener('change', function() {
-                const highwayName = this.value; // 'gyeongbu' 또는 'yeongdong'
+    // 5. HTML 요소들을 변수에 저장
+    const highwayCheckboxes = document.querySelectorAll('input[name="highway"]');
+    const toggleAllCheckbox = document.getElementById('toggle-all');
 
-                // 체크박스가 체크되었을 때
-                if (this.checked) {
-                    // 아직 라인이 그려지지 않았다면 라인을 그림
-                    if (!highwayLayers[highwayName]) {
-                        const path = highwayData[highwayName];
-                        const color = highwayName === 'gyeongbu' ? 'blue' : 'green';
-                        const polyline = L.polyline(path, { color: color }).addTo(map);
-                        
-                        // 팝업 추가
-                        polyline.bindPopup(`<b>${highwayName === 'gyeongbu' ? '경부선' : '영동선'}</b>`);
-                        
-                        // 그린 라인을 객체에 저장
-                        highwayLayers[highwayName] = polyline;
-                    }
-                } 
-                // 체크박스가 해제되었을 때
-                else {
-                    // 그려진 라인이 있다면 지도에서 제거
-                    if (highwayLayers[highwayName]) {
-                        map.removeLayer(highwayLayers[highwayName]);
-                        delete highwayLayers[highwayName]; // 객체에서 삭제
-                    }
-                }
-            });
+    // 6. '전체 선택' 체크박스 이벤트 처리 (버그 수정한 최종본)
+    toggleAllCheckbox.addEventListener('change', function() {
+        const isChecked = this.checked;
+        highwayCheckboxes.forEach(checkbox => {
+            checkbox.checked = isChecked;
+            // 이벤트 발생 대신, 함수를 직접 호출하여 충돌 방지
+            toggleHighway(checkbox.value, isChecked);
         });
+    });
+
+    // 개별 고속도로 체크박스 이벤트 처리
+    highwayCheckboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+            toggleHighway(this.value, this.checked);
+            updateToggleAllCheckboxState();
+        });
+    });
+    
+    // 지도에 라인을 그리거나 지우는 핵심 함수
+    function toggleHighway(highwayName, isChecked) {
+        if (isChecked) {
+            if (!highwayLayers[highwayName]) {
+                const data = highwayData[highwayName];
+                const polyline = L.polyline(data.path, { color: data.color }).addTo(map);
+                polyline.bindPopup(`<b>${data.name}</b>`);
+                highwayLayers[highwayName] = polyline;
+            }
+        } else {
+            if (highwayLayers[highwayName]) {
+                map.removeLayer(highwayLayers[highwayName]);
+                delete highwayLayers[highwayName];
+            }
+        }
+    }
+
+    // '전체 선택' 체크박스의 상태를 업데이트하는 함수
+    function updateToggleAllCheckboxState() {
+        const allChecked = Array.from(highwayCheckboxes).every(cb => cb.checked);
+        const someChecked = Array.from(highwayCheckboxes).some(cb => cb.checked);
+
+        if (allChecked) {
+            toggleAllCheckbox.checked = true;
+            toggleAllCheckbox.indeterminate = false;
+        } else if (someChecked) {
+            toggleAllCheckbox.checked = false;
+            toggleAllCheckbox.indeterminate = true; // 일부만 선택 시 '-' 표시
+        } else {
+            toggleAllCheckbox.checked = false;
+            toggleAllCheckbox.indeterminate = false;
+        }
+    }
+    // 페이지 로드 시 초기 상태 확인
+    updateToggleAllCheckboxState();
+</script>
 
     </script>
 </body>
